@@ -1,0 +1,15 @@
+{
+    {$DOMAIN}
+}
+
+encode gzip
+
+header {
+    Strict-Transport-Security "max-age=31536000"
+    X-Content-Type-Options "nosniff"
+    Permissions-Policy "camera=(self)"
+}
+
+root * /srv
+try_files {path} /index.html
+file_server
