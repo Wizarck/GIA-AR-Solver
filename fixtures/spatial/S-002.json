@@ -1,0 +1,69 @@
+{
+  "id": "S-002",
+  "taskType": "spatial_visualisation",
+  "problemFamily": "S1",
+  "state": "QUESTION",
+  "source": "synthetic",
+  "image": "S-002.png",
+  "questionText": "Cuántos cuadrados tienen la misma letra?",
+  "answerId": 1,
+  "answerValue": 1,
+  "answerBBox": [
+    0.3633,
+    0.775,
+    0.2727,
+    0.125
+  ],
+  "stimulusBBoxes": [
+    [
+      0.2344,
+      0.3,
+      0.2031,
+      0.425
+    ],
+    [
+      0.5938,
+      0.3,
+      0.2031,
+      0.425
+    ]
+  ],
+  "squareImages": [
+    "S-002-square1.png",
+    "S-002-square2.png"
+  ],
+  "options": [
+    {
+      "index": 0,
+      "text": "0",
+      "bbox": [
+        0.0719,
+        0.775,
+        0.2727,
+        0.125
+      ]
+    },
+    {
+      "index": 1,
+      "text": "1",
+      "bbox": [
+        0.3633,
+        0.775,
+        0.2727,
+        0.125
+      ]
+    },
+    {
+      "index": 2,
+      "text": "2",
+      "bbox": [
+        0.6547,
+        0.775,
+        0.2727,
+        0.125
+      ]
+    }
+  ],
+  "difficulty": "baseline",
+  "notes": "Synthetic fixture (no documented glyph content was supplied for this observed answer). Generation parameters: square1: F@40° vs F@150° (rotation match); square2: G@20° vs mirror(G)@75° (mirror → NOT a match). squareImages are inner crops excluding the 4px square border. Ground truth matches the observed result recorded in docs/dataset-specification.md §3."
+}

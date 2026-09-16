@@ -1,0 +1,43 @@
+{
+  "id": "R-002",
+  "taskType": "reasoning",
+  "problemFamily": "R1",
+  "state": "QUESTION",
+  "source": "authorized-practice-documented",
+  "image": "R-002-question.png",
+  "statementImage": "R-002-statement.png",
+  "statementText": "Carlos es más distraído que Eva.",
+  "questionText": "Quién es menos atento?",
+  "answerId": 1,
+  "answerBBox": [
+    0.5094,
+    0.775,
+    0.4188,
+    0.125
+  ],
+  "stimulusBBoxes": [],
+  "options": [
+    {
+      "index": 0,
+      "text": "Eva",
+      "bbox": [
+        0.0719,
+        0.775,
+        0.4188,
+        0.125
+      ]
+    },
+    {
+      "index": 1,
+      "text": "Carlos",
+      "bbox": [
+        0.5094,
+        0.775,
+        0.4188,
+        0.125
+      ]
+    }
+  ],
+  "difficulty": "baseline",
+  "notes": "Synthetic re-render of the documented example in docs/dataset-specification.md §3; layout approximated, not a screenshot. Ground truth derivation: Carlos > Eva on distractedness ⇒ Carlos < Eva on attention; menos atento → Carlos."
+}

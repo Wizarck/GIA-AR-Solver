@@ -1,0 +1,90 @@
+{
+  "id": "PS-002",
+  "taskType": "perceptual_speed",
+  "problemFamily": "P1",
+  "state": "QUESTION",
+  "source": "authorized-practice-documented",
+  "image": "PS-002.png",
+  "questionText": "Cuántas columnas tienen la misma letra?",
+  "columns": [
+    [
+      "C",
+      "C"
+    ],
+    [
+      "e",
+      "E"
+    ],
+    [
+      "g",
+      "G"
+    ],
+    [
+      "o",
+      "O"
+    ]
+  ],
+  "answerId": 4,
+  "answerValue": 4,
+  "answerBBox": [
+    0.7719,
+    0.775,
+    0.1562,
+    0.125
+  ],
+  "stimulusBBoxes": [],
+  "options": [
+    {
+      "index": 0,
+      "text": "0",
+      "bbox": [
+        0.0719,
+        0.775,
+        0.1562,
+        0.125
+      ]
+    },
+    {
+      "index": 1,
+      "text": "1",
+      "bbox": [
+        0.2469,
+        0.775,
+        0.1562,
+        0.125
+      ]
+    },
+    {
+      "index": 2,
+      "text": "2",
+      "bbox": [
+        0.4219,
+        0.775,
+        0.1562,
+        0.125
+      ]
+    },
+    {
+      "index": 3,
+      "text": "3",
+      "bbox": [
+        0.5969,
+        0.775,
+        0.1562,
+        0.125
+      ]
+    },
+    {
+      "index": 4,
+      "text": "4",
+      "bbox": [
+        0.7719,
+        0.775,
+        0.1562,
+        0.125
+      ]
+    }
+  ],
+  "difficulty": "baseline",
+  "notes": "Synthetic re-render of the documented example in docs/dataset-specification.md §3; 4-column layout per problem-taxonomy.md §3."
+}

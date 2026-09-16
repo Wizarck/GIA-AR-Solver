@@ -40,7 +40,7 @@ Before responding to ANY task:
 
 ## 1 Project identity
 
-{{ONE_TO_THREE_LINES_ABOUT_THE_PROJECT}}
+Real-time camera application that watches an authorized GIA-style aptitude test on a screen, detects the active question, solves it with deterministic specialized solvers (no LLM unless genuinely required), localizes the correct answer option, and renders an AR stroke anchored to it in the live camera feed. Source of truth: `GIA_AR_Solver_Roadmap.md` + `GIA_AR_Solver_Master_Prompt.md` + `docs/*.md` specs + `TODO.md` backlog.
 
 <!-- ai-playbook:begin id=dispatcher-index -->
 ## 2 Dispatcher index
@@ -62,11 +62,15 @@ Before responding to ANY task:
 
 ## 3 Active work
 
-{{ACTIVE_OPENSPEC_CHANGE_OR_NONE}}
+No live OpenSpec change. Operational backlog: `TODO.md` (IDs GIA-xxx / VERIFY-xxx / DATA-xxx / BENCH-xxx / TEST-xxx / SOAK-xxx). Critical path and autonomous execution rules: `GIA_AR_Solver_Master_Prompt.md` §26 and §28.
 
 ## 4 Project hard rules (project-specific, NOT duplicating playbook)
 
-{{PROJECT_SPECIFIC_RULES_NOT_DUPLICATING_PLAYBOOK}}
+- Never start implementation from a bare prompt: run the mandatory initialization in `GIA_AR_Solver_Master_Prompt.md` §3 first (read all sources of truth, reconcile `TODO.md`, claim an item).
+- Solver order of preference: classic CV → deterministic algorithms → small specialized ML → OCR/NLP → LLM/VLM fallback only when genuinely ambiguous (`GIA_AR_Solver_Roadmap.md` §1.1). No LLM where deterministic logic suffices.
+- Never claim an unobserved GIA generator/timing/tie behavior. Mark unresolved behavior `VERIFY` in `docs/problem-taxonomy.md` terms; do not invent answers at low confidence.
+- Only authorized practice material, supplied screenshots, or synthetic fixtures in `fixtures/`; never private real-test content. Camera frames stay local.
+- Every solver returns the visible answer option identity (`answerId`), not just a semantic value — required for AR localization.
 
 <!-- ai-playbook:begin id=capability-map -->
 ## 5 Capability map
@@ -101,7 +105,7 @@ Rendered to **local, gitignored** `.mcp.json` + `.gemini/settings.json` via `scr
 
 ## 7 Overrides inherited from playbook
 
-{{NONE_OR_EXPLICIT_OVERRIDES_WITH_RATIONALE}}
+None. Playbook defaults apply as pinned (`ai-playbook@v0.24.0`).
 
 <!--
 If this project has a pre-existing OpenSpec custom workflow (its own
@@ -123,13 +127,10 @@ a playbook spec by path.
 
 ## 8 Gotchas
 
-{{EMPTY_FILL_AS_YOU_LEARN}}
-
 Append one-line dated entries when a project gotcha is discovered:
 
-```
-- YYYY-MM-DD — <what went wrong>. <rule to apply next time>.
-```
+- 2026-09-16 — Raw IoU breaks on thin-stroke glyphs under rotation; use blur-cosine + translation refinement (`solvers/spatial.py`). See TODO Lessons Learned.
+- 2026-09-16 — Reasoning regexes run on accent-stripped text; patterns must use stripped forms (mas, not más).
 
 Promote recurring gotchas to Hindsight via `retain_memory.py --kind gotcha` so other sessions and projects benefit.
 

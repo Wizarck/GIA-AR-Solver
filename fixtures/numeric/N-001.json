@@ -1,0 +1,57 @@
+{
+  "id": "N-001",
+  "taskType": "number_speed",
+  "problemFamily": "N1",
+  "state": "QUESTION",
+  "source": "authorized-practice-documented",
+  "image": "N-001.png",
+  "questionText": "Qué número está más alejado de la mediana?",
+  "values": [
+    17,
+    9,
+    12
+  ],
+  "answerId": 0,
+  "answerValue": 17,
+  "answerBBox": [
+    0.0719,
+    0.775,
+    0.2727,
+    0.125
+  ],
+  "stimulusBBoxes": [],
+  "options": [
+    {
+      "index": 0,
+      "text": "17",
+      "bbox": [
+        0.0719,
+        0.775,
+        0.2727,
+        0.125
+      ]
+    },
+    {
+      "index": 1,
+      "text": "9",
+      "bbox": [
+        0.3633,
+        0.775,
+        0.2727,
+        0.125
+      ]
+    },
+    {
+      "index": 2,
+      "text": "12",
+      "bbox": [
+        0.6547,
+        0.775,
+        0.2727,
+        0.125
+      ]
+    }
+  ],
+  "difficulty": "baseline",
+  "notes": "Synthetic re-render of the documented example in docs/dataset-specification.md §3; ground truth per problem-taxonomy.md §4 median-distance rule."
+}

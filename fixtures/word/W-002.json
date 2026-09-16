@@ -1,0 +1,57 @@
+{
+  "id": "W-002",
+  "taskType": "word_meaning",
+  "problemFamily": "W1",
+  "state": "QUESTION",
+  "source": "authorized-practice-documented",
+  "image": "W-002.png",
+  "questionText": "Qué palabra no es adecuada?",
+  "words": [
+    "Indiscreto",
+    "Abrigo",
+    "Curioso"
+  ],
+  "answerId": 1,
+  "answerValue": "Abrigo",
+  "answerBBox": [
+    0.3633,
+    0.775,
+    0.2727,
+    0.125
+  ],
+  "stimulusBBoxes": [],
+  "options": [
+    {
+      "index": 0,
+      "text": "Indiscreto",
+      "bbox": [
+        0.0719,
+        0.775,
+        0.2727,
+        0.125
+      ]
+    },
+    {
+      "index": 1,
+      "text": "Abrigo",
+      "bbox": [
+        0.3633,
+        0.775,
+        0.2727,
+        0.125
+      ]
+    },
+    {
+      "index": 2,
+      "text": "Curioso",
+      "bbox": [
+        0.6547,
+        0.775,
+        0.2727,
+        0.125
+      ]
+    }
+  ],
+  "difficulty": "baseline",
+  "notes": "Synthetic re-render of the documented example in docs/dataset-specification.md §3; answer as OBSERVED there (odd-one-out)."
+}
