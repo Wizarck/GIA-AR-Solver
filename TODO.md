@@ -23,8 +23,8 @@ unit-tested. Next: camera infrastructure (GIA-010+) and real fixture capture
 - [x] GIA-010 Camera engine (web POC: getUserMedia, facing-mode flip, native preview)
 - [x] GIA-011 Screen detection (pure-TS: Otsu + components + extreme-corner quad, EMA smoothing; 97 % confidence on synthetic monitor)
 - [x] GIA-012 Perspective correction (4-point DLT homography + bilinear inverse warp, self-tested)
-- [ ] GIA-013 Question/state detection
-- [ ] GIA-014 Answer localization
+- [~] GIA-013 Question/state detection (numeric path live: option-box detection in rectified space works; state detector pending)
+- [~] GIA-014 Answer localization (numeric: option boxes → answer stroke mapped to camera overlay)
 - [ ] GIA-015 Coordinate mapping
 - [ ] GIA-016 AR overlay
 - [ ] GIA-017 Real-time tracking
@@ -193,6 +193,16 @@ bug
   (determinista), Word 20/0 (fallback LLM). Regla de quiralidad espacial
   probada (det-sign de la matriz CSS). Detalles en
   `captures/steciuk-practice/README.md`.
+
+- **2026-09-16 — Solver end-to-end en web (numérico).** `web/src/solver.ts`
+  (NumericSolver portado + `findOptionBoxes`), `web/src/ocr.ts`
+  (Tesseract.js dígitos, PSM SINGLE_WORD sobre crops binarizados 4×),
+  ciclo solver a ~0.8 Hz con rectificación hi-res. Bench en vivo contra
+  gia.steciuk.dev: **11/11 (100 %)** — OCR exacto y respuestas correctas
+  (`captures/live-benchmark-numeric.md`). Lecciones: índices flotantes en
+  Uint8Array silently blank-ean el canvas; el bezel del rectificado puentea
+  componentes por el marco → analizar el interior (inset 2 px) y endurecer
+  el umbral de Otsu (×0.65).
 
 Move completed items here with:
 
