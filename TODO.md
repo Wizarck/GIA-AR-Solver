@@ -239,5 +239,17 @@ Every deferred item requires a reason.
   make mirror(top) ≅ rotation(top), so a mirror match IS a rotation match
   for them; measure self-symmetry with a full rotation sweep, not a single
   un-rotated IoU.
+- 2026-09-16 — Fractional crop coordinates make `gray[y * sw + x]` a float
+  index into a Uint8Array → `undefined` → everything binarizes white and
+  OCR returns empty with no error. Integerize every coordinate at the
+  boundary.
+- 2026-09-16 — In rectified screen space, the monitor bezel lives on the
+  outermost rows/columns and bridges otherwise-separate option-box outlines
+  along the frame; run component analysis on the interior (2 px inset) and
+  harden the Otsu threshold (~×0.65) so edge shading never binarizes as ink.
+- 2026-09-16 — Untimed modules score 100 % through the full web pipeline,
+  but a per-question timer (numeric) exposes orchestration latency: six
+  timeouts on 23 questions at ~2–4 s/solve in a throttled tab. Latency is
+  part of correctness on timed modules (→ GIA-018, ~300 ms budget).
 
 Record reusable engineering lessons here.
