@@ -1,0 +1,100 @@
+{
+  "_comment": "Project-level Claude Code settings. SessionStart hook auto-recalls Hindsight context per .ai-playbook/specs/memory-hierarchy.md §4. PreToolUse hook enforces apply-skill orchestration per .ai-playbook/specs/apply-skill-enforcement.md. The dispatcher matcher includes Bash (v0.20.0+) for heuristic detection of terminal-side writes to declared write_paths (set AIPLAYBOOK_BASH_INSPECTION=0 to disable that branch only), and KillShell|TaskStop (v0.19.26+) so the confirm-before-termination rule can veto stopping a running task without explicit user confirmation.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sops exec-env ../consumer-a/secrets/secrets.env -- python .ai-playbook/scripts/inject_context.py --bank-id gia-ar-solver 2>/dev/null || true",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/hooks/openspec-apply-enforce.py",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit|Bash|KillShell|TaskStop|mcp__.*__(create|edit)JiraIssue",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.ai-playbook/scripts/hook_dispatcher.py\" PreToolUse",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .ai-playbook/scripts/rules/caveman-reinforce.rule.py",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "python .ai-playbook/scripts/rules/ponytail-reinforce.rule.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [],
+    "deny": [
+      "Bash(git push --force origin main*)",
+      "Bash(git push --force origin master*)",
+      "Bash(git push --force-with-lease origin main*)",
+      "Bash(git push --force-with-lease origin master*)",
+      "Bash(git push -f origin main*)",
+      "Bash(git push -f origin master*)",
+      "Bash(git push --force origin*)",
+      "Bash(git push -f origin*)",
+      "Bash(git reset --hard origin*)",
+      "Bash(git update-ref -d refs/heads/main*)",
+      "Bash(git update-ref -d refs/heads/master*)",
+      "Bash(git branch -D main*)",
+      "Bash(git branch -D master*)",
+      "Bash(rm -rf /)",
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~)",
+      "Bash(rm -rf $HOME)",
+      "Bash(rm -rf /home*)",
+      "Bash(rm -rf /etc*)",
+      "Bash(rm -rf /usr*)",
+      "Bash(rm -rf /var*)",
+      "Bash(rm -rf /c/*)",
+      "Bash(rm -rf /d/*)",
+      "Bash(rm -rf /c/Users*)",
+      "Bash(rm -rf /c/Windows*)",
+      "Bash(rm -rf /c/Program Files*)",
+      "Bash(rm -rf C:*)",
+      "Bash(rm -rf D:*)",
+      "Bash(rm -rf //c*)",
+      "Bash(rm -rf //d*)",
+      "Bash(* DROP DATABASE*)",
+      "Bash(* DROP TABLE*)",
+      "Bash(* TRUNCATE *)",
+      "Bash(dd if=* of=/dev/sd*)",
+      "Bash(mkfs* *)",
+      "Bash(shutdown *)",
+      "Bash(reboot *)",
+      "Bash(halt *)",
+      "Bash(init 0*)",
+      "Bash(init 6*)"
+    ],
+    "additionalDirectories": []
+  }
+}

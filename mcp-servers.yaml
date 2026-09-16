@@ -1,0 +1,10 @@
+# mcp-servers.yaml — PROJECT layer for gia-ar-solver.
+# Merged with ai-playbook/mcp-servers-base.yaml (universal) and personal layer
+# via `python .ai-playbook/scripts/mcp/render.py --project gia-ar-solver`.
+
+schema: mcp-servers/v1
+version: 0.1.0
+layer: project
+project: gia-ar-solver
+
+servers: {}

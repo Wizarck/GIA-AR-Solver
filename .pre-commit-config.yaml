@@ -1,0 +1,95 @@
+# Pre-commit config for gia-ar-solver. Inherits hooks from the ai-playbook submodule.
+# Bootstrap: `pip install pre-commit && pre-commit install` after cloning.
+#
+# Hooks inside the `# >>> ai-playbook:begin id=playbook-hooks >>>` block below are
+# playbook-managed and overwritten on `apply_config` / `bootstrap --update`. Add
+# project-specific hooks OUTSIDE that block — they will be preserved across
+# re-renders. See .ai-playbook/specs/fusion-integration-pattern.md §8 for
+# guidance on tailoring this template.
+
+repos:
+# >>> ai-playbook:begin id=playbook-hooks >>>
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-added-large-files
+        args: [--maxkb=500]
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+
+  - repo: local
+    hooks:
+      - id: schema-validate-agents
+        name: Validate AGENTS.md against playbook schema
+        entry: bash -c '[ -d .ai-playbook ] && python .ai-playbook/scripts/schema_validate.py AGENTS.md || exit 0'
+        language: system
+        pass_filenames: false
+        files: ^AGENTS\.md$
+
+      - id: mcp-validate
+        name: Validate mcp-servers.yaml layering
+        entry: bash -c '[ -d .ai-playbook ] && python .ai-playbook/scripts/mcp/validate.py || exit 0'
+        language: system
+        pass_filenames: false
+        files: ^mcp-servers\.yaml$|^mcp-servers\.project\.yaml$
+
+      # No-op until the project declares a `wiring.yaml`. `always_run` is
+      # deliberate: the population is any source file, so there is no useful
+      # `files:` filter — and the bug this catches is "capability changed,
+      # registry untouched", which a filter on the registry would hide.
+      - id: capability-wiring
+        name: Capability is wired into its registry (code-entropy axis 4)
+        entry: bash -c '[ -f wiring.yaml ] && python .ai-playbook/scripts/rules/capability-wiring.rule.py check --changed-only || exit 0'
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      # No-op until the project declares a `repo-hygiene.yaml`. `--changed-only`
+      # narrows on the MANIFEST, so the ordinary commit that touches no manifest
+      # pays only the artefact probes (a few stat calls) and skips the corpus
+      # walk entirely.
+      - id: repo-hygiene
+        name: Dependencies are used, artefacts are ignored and fresh (code-entropy axes 3+5)
+        entry: bash -c '[ -f repo-hygiene.yaml ] && python .ai-playbook/scripts/rules/repo-hygiene.rule.py check --changed-only || exit 0'
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: verdict-lint
+        name: Lint review/verify verdict shape (verdict-contract.md)
+        entry: bash -c '[ -d .ai-playbook ] && python .ai-playbook/scripts/verdict_lint.py --shape artifact || exit 0'
+        language: system
+        files: ^openspec/changes/.*/(review|verify)\.md$
+
+      # OPTIONAL — enable only if this project archives OpenSpec changes into
+      # openspec/specs/ via the archive workflow. Projects using a custom
+      # workflow that does NOT promote specs post-archive (e.g. consumer-a's
+      # consumer-a-team schema) should leave this disabled. See AGENTS.md §7.5.
+      # - id: block-manual-spec-edit
+      #   name: Block manual edits to openspec/specs/
+      #   entry: bash -c '[ -d .ai-playbook ] && python .ai-playbook/scripts/block_manual_spec_edit.py || exit 0'
+      #   language: system
+      #   files: ^openspec/specs/.*\.md$
+
+      # OPTIONAL — enable only if this project calls LLMs directly from code
+      # (e.g. via anthropic / openai SDKs in production paths). Projects that
+      # do NOT call LLMs directly (e.g. backend-only data sync services)
+      # should leave this disabled. See AGENTS.md §7.5.
+      # - id: verify-llm-routing
+      #   name: Verify LLM routing (Change C drift detector — direct-SDK callers)
+      #   entry: bash -c '[ -d .ai-playbook ] && python .ai-playbook/scripts/verify_llm_routing.py || exit 0'
+      #   language: system
+      #   pass_filenames: false
+      #   # Warn-only initially per ai-playbook D3.5; promote to --strict after
+      #   # 30 days of green builds. Migrate offending callers to
+      #   # `.ai-playbook.scripts._llm.call(task_class, ...)` — see
+      #   # `.ai-playbook/specs/model-routing.md` §1 for the task-class taxonomy.
+      #   always_run: true
+# <<< ai-playbook:end playbook-hooks <<<
