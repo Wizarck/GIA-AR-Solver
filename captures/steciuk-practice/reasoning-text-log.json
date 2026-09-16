@@ -1,0 +1,74 @@
+[
+  {
+    "screen": "statement",
+    "text": "  - heading \"Miriam es más fiable que Carmen.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es más fiable?\" [level=3]",
+    "options": [
+      "  - button \"Miriam\"",
+      "  - button \"Carmen\""
+    ]
+  },
+  {
+    "screen": "statement",
+    "text": "  - heading \"Natalia es más intimidante que Julio.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es menos accesible?\" [level=3]",
+    "options": [
+      "  - button \"Julio\"",
+      "  - button \"Natalia\""
+    ]
+  },
+  {
+    "screen": "statement",
+    "text": "  - heading \"Silvia es más cooperativo(-a) que Irene.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es más cooperativo(-a)?\" [level=3]",
+    "options": [
+      "  - button \"Irene\"",
+      "  - button \"Silvia\""
+    ]
+  },
+  {
+    "screen": "statement",
+    "text": "  - heading \"Ana no es tan hostil como Gerardo.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es más amigable?\" [level=3]",
+    "options": [
+      "  - button \"Ana\"",
+      "  - button \"Gerardo\""
+    ]
+  },
+  {
+    "screen": "statement",
+    "text": "  - heading \"Daniela es más flexible que Alberto.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es menos rígido(-a)?\" [level=3]",
+    "options": [
+      "  - button \"Alberto\"",
+      "  - button \"Daniela\""
+    ]
+  },
+  {
+    "screen": "statement",
+    "text": "  - heading \"Arturo no es tan educado(-a) como Antonio.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es más educado(-a)?\" [level=3]",
+    "options": [
+      "  - button \"Arturo\"",
+      "  - button \"Antonio\""
+    ]
+  }
+]

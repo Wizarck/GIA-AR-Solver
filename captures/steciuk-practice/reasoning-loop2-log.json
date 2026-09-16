@@ -1,0 +1,190 @@
+[
+  {
+    "screen": "statement",
+    "text": "  - heading \"Daniel no es tan fuerte como Leticia.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es más fuerte?\" [level=3]"
+  },
+  {
+    "screen": "statement",
+    "text": "  - heading \"Rodrigo es más cruel que Camila.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es menos cruel?\" [level=3]"
+  },
+  {
+    "screen": "statement",
+    "text": "  - heading \"Alfonso es más desleal que Consuelo.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es más leal?\" [level=3]"
+  },
+  {
+    "screen": "statement",
+    "text": "  - heading \"Enrique no es tan resentido(-a) como Alejandro.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es más perdonador(-a)?\" [level=3]"
+  },
+  {
+    "screen": "statement",
+    "text": "  - heading \"Ignacio no es tan tonto(-a) como Miriam.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es menos inteligente?\" [level=3]"
+  },
+  {
+    "screen": "statement",
+    "text": "  - heading \"Guillermo no es tan grosero(-a) como Claudia.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es más grosero(-a)?\" [level=3]"
+  },
+  {
+    "screen": "statement",
+    "text": "  - heading \"Enrique es más débil(-e) que Andrea.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es más débil(-e)?\" [level=3]"
+  },
+  {
+    "screen": "statement",
+    "text": "  - heading \"Rubén no es tan cooperativo(-a) como Juan.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es menos individualista(-a)?\" [level=3]"
+  },
+  {
+    "screen": "statement",
+    "text": "  - heading \"Eva es más educado(-a) que Hugo.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es menos educado(-a)?\" [level=3]"
+  },
+  {
+    "screen": "statement",
+    "text": "  - heading \"Valeria no es tan empático(-a) como Inés.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es más insensible?\" [level=3]"
+  },
+  {
+    "screen": "statement",
+    "text": "  - heading \"Alfredo no es tan alto(-a) como Victoria.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es menos alto(-a)?\" [level=3]"
+  },
+  {
+    "screen": "statement",
+    "text": "  - heading \"Francisco no es tan amable como Tomás.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es menos amable?\" [level=3]"
+  },
+  {
+    "screen": "statement",
+    "text": "  - heading \"Agustín es más sospechoso que Enrique.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es más confiable?\" [level=3]"
+  },
+  {
+    "screen": "statement",
+    "text": "  - heading \"Guillermo no es tan innovador(-a) como Mercedes.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es más conservador(-a)?\" [level=3]"
+  },
+  {
+    "screen": "statement",
+    "text": "  - heading \"Lucía no es tan diplomático(-a) como Eduardo.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es más diplomático(-a)?\" [level=3]"
+  },
+  {
+    "screen": "statement",
+    "text": "  - heading \"Daniel no es tan empático(-a) como Concepción.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es menos empático(-a)?\" [level=3]"
+  },
+  {
+    "screen": "statement",
+    "text": "  - heading \"Enrique no es tan despistado(-a) como Javier.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es más vigilante?\" [level=3]"
+  },
+  {
+    "screen": "statement",
+    "text": "  - heading \"Concepción no es tan humilde como Monica.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es más arrogante?\" [level=3]"
+  },
+  {
+    "screen": "statement",
+    "text": "  - heading \"Esteban es más ingenioso(-a) que Miguel.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es más necio(-a)?\" [level=3]"
+  },
+  {
+    "screen": "statement",
+    "text": "  - heading \"Alfonso es más atento(-a) que Laura.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es menos atento(-a)?\" [level=3]"
+  },
+  {
+    "screen": "statement",
+    "text": "  - heading \"Elena no es tan perezoso(-a) como Francisco.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es más activo(-a)?\" [level=3]"
+  },
+  {
+    "screen": "statement",
+    "text": "  - heading \"Ricardo no es tan serio(-a) como Enrique.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es más divertido(-a)?\" [level=3]"
+  },
+  {
+    "screen": "statement",
+    "text": "  - heading \"Adriana es más grosero(-a) que Rubén.\" [level=3]"
+  },
+  {
+    "screen": "question",
+    "text": "  - heading \"Quién es más respetuoso(-a)?\" [level=3]"
+  },
+  {
+    "screen": "MODULE_CHANGE",
+    "text": "reached Velocidad perceptiva"
+  }
+]

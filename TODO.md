@@ -36,20 +36,20 @@ unit-tested. Next: camera infrastructure (GIA-010+) and real fixture capture
 
 # Reverse Engineering / VERIFY
 
-- [ ] VERIFY-001 Capture all available instruction screens
-- [ ] VERIFY-002 Capture additional Reasoning statement/question transitions
-- [ ] VERIFY-003 Verify Reasoning transition timing
-- [ ] VERIFY-004 Verify Perceptual layout variability
-- [ ] VERIFY-005 Verify Numeric position permutations
-- [ ] VERIFY-006 Verify Numeric duplicate/tie behavior
-- [ ] VERIFY-007 Capture additional Word Meaning relationship types
-- [ ] VERIFY-008 Verify Word Meaning semantic relationship taxonomy
-- [ ] VERIFY-009 Capture additional Spatial glyph families
-- [ ] VERIFY-010 Verify Spatial rotation-angle distribution
-- [ ] VERIFY-011 Verify Spatial mirror+rotation cases
-- [ ] VERIFY-012 Verify answer-layout variability across all modules
-- [ ] VERIFY-013 Verify timer/progress UI behavior
-- [ ] VERIFY-014 Inspect authorized/public practice source/assets where appropriate
+- [x] VERIFY-001 Capture all available instruction screens (2026-09-16: all 5 captured from gia.steciuk.dev practice site — captures/steciuk-practice/)
+- [x] VERIFY-002 Capture additional Reasoning statement/question transitions (22 pairs harvested with full trait vocabulary)
+- [ ] VERIFY-003 Verify Reasoning transition timing (progress bar observed; timing not yet measured)
+- [ ] VERIFY-004 Verify Perceptual layout variability (all 92 observed questions were 4-column; variation unobserved)
+- [x] VERIFY-005 Verify Numeric position permutations (162 questions observed: values appear in arbitrary positions)
+- [x] VERIFY-006 Verify Numeric duplicate/tie behavior (162 questions: zero ties/duplicates observed — argmax safe on this generator)
+- [x] VERIFY-007 Capture additional Word Meaning relationship types (20 triplets: category-based, synonym-pair + intruder; logged)
+- [x] VERIFY-008 Verify Word Meaning semantic relationship taxonomy (observed: noun-class pairs, verb pairs, adjective-pair + semantically-odd intruder; synonym-only rule disproved)
+- [ ] VERIFY-009 Capture additional Spatial glyph families (site generated no scored spatial items; 1 sample captured)
+- [x] VERIFY-010 Spatial rotation-angle distribution: arbitrary angles via CSS matrix() — rotation angle is IRRELEVANT to equality
+- [x] VERIFY-011 Spatial mirror+rotation cases: chirality rule proven — same letter + same determinant sign = equal; det<0 = mirrored = never equal
+- [ ] VERIFY-012 Verify answer-layout variability across all modules (options always bottom-row boxes in this generator)
+- [ ] VERIFY-013 Verify timer/progress UI behavior (progress bar present; per-question timer not yet measured)
+- [x] VERIFY-014 Inspect authorized/public practice source (gia.steciuk.dev practiced end-to-end; scores validate solver algorithms)
 
 ---
 
