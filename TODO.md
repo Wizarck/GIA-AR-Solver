@@ -20,9 +20,9 @@ unit-tested. Next: camera infrastructure (GIA-010+) and real fixture capture
 - [x] GIA-007 Numeric solver
 - [x] GIA-008 Reasoning solver
 - [x] GIA-009 Word Meaning solver
-- [ ] GIA-010 Camera engine
-- [ ] GIA-011 Screen detection
-- [ ] GIA-012 Perspective correction
+- [x] GIA-010 Camera engine (web POC: getUserMedia, facing-mode flip, native preview)
+- [x] GIA-011 Screen detection (pure-TS: Otsu + components + extreme-corner quad, EMA smoothing; 97 % confidence on synthetic monitor)
+- [x] GIA-012 Perspective correction (4-point DLT homography + bilinear inverse warp, self-tested)
 - [ ] GIA-013 Question/state detection
 - [ ] GIA-014 Answer localization
 - [ ] GIA-015 Coordinate mapping
@@ -179,6 +179,20 @@ bug
   embedding layer + VLM fallback remain advisory hand-offs (VERIFY-007/008).
 - **2026-09-16 — TEST-001 Unit test framework.** 50 tests green
   (`python -m pytest`, <30 s).
+- **2026-09-16 — GIA-010..012 Camera POC (web).** `web/`: Vite + TypeScript,
+  native `<video>` preview, overlay canvas, processing loop at ~15 Hz.
+  Detector en TypeScript puro (Otsu → componente conexo dominante → esquinas
+  extremas del hull → suavizado EMA con grace-period tracking); sin
+  OpenCV.js — 8 KB JS totales. Homografía DLT de 4 puntos + warp inverso
+  bilineal con self-test en arranque. Verificado end-to-end en navegador
+  con stream sintético (`__giaInjectStream`): quad detectado al 97 % y
+  vista rectificada legible (`captures/poc-test-*.png`). Despliegue listo
+  en `deploy/` (Docker + Caddy auto-HTTPS, requisito de getUserMedia).
+- **2026-09-16 — Evidence run vs gia.steciuk.dev.** Scores reales del
+  generador de práctica validando los algoritmos: Numérico 162/0
+  (determinista), Word 20/0 (fallback LLM). Regla de quiralidad espacial
+  probada (det-sign de la matriz CSS). Detalles en
+  `captures/steciuk-practice/README.md`.
 
 Move completed items here with:
 
