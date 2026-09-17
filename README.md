@@ -52,13 +52,24 @@ python -m gia_ar_solver bench        # run every solver benchmark
 python -m gia_ar_solver solve --fixture fixtures/numeric/N-001.json
 ```
 
-## Status
+## Status (2026-09-17)
 
-Phase 0/1 — solver POC on synthetic fixtures derived from documented observed
-examples. Camera/screen/AR phases are not started. Unresolved test behaviour is
-tracked as `VERIFY` items in `TODO.md`; nothing undocumented is assumed.
+- **Solvers deterministas**: implementados y validados — numeric 162/0 y
+  word 20/0 contra el generador real de práctica; perceptual 146/0 y
+  spatial 150/0 sobre el DOM del sitio.
+- **Webapp** (`web/`): cámara → detección de pantalla → rectificación →
+  clasificación de módulo → solución → AR. Dos rutas de percepción:
+  - **VLM (primaria, en curso)**: `src/llm.ts` — compatible con cualquier
+    endpoint OpenAI-style (OpenRouter, Ollama local, LM Studio). La base,
+    el modelo y la key se configuran en localStorage del navegador.
+  - **OCR (fallback local)**: `src/ocr.ts` + `solveFromTokens` en
+    `src/solver.ts`.
+- **Batería**: 406 capturas reales etiquetadas (`captures/battery/raw/`).
+  Headless OCR: `web/battery-node.mjs`. VLM: `web/llm-battery.mjs`.
+- **Deploy**: `deploy/` (Docker + Caddy auto-HTTPS) — getUserMedia exige
+  HTTPS.
 
-## Usage boundary
+## Usage boundary## Usage boundary
 
 Development uses authorized practice material and synthetic fixtures only. Do not use
 this tool during any real evaluation; check provider and process rules first.

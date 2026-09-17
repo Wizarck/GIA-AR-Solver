@@ -2,10 +2,54 @@
 
 ## Current Phase
 
-Phase 1 complete on synthetic fixtures — all five deterministic solvers
-implemented, benchmarked (100% accuracy on the documented fixture set) and
-unit-tested. Next: camera infrastructure (GIA-010+) and real fixture capture
-(VERIFY-001.., DATA-001..).
+Fase 1-VLM completada en local (pendiente commit/pull en otro portátil).
+Siguientes pasos en la sección "RESUMPTION — leer primero" más abajo.
+
+---
+
+## RESUMPTION — leer primero (retoma en otro portátil)
+
+Estado al 2026-09-17 (ramas: main @ post "battery+VLM"):
+
+**Lo que funciona (verificado):**
+- Webapp: cámara → detección de pantalla → rectificación → AR (todo pixel-only)
+- Clasificador de módulo por texto OCR (numeric/perceptual/word/reasoning/spatial)
+- Solvers deterministas: numeric (11/11 en vivo), perceptual (146/0 DOM),
+  spatial chirality (150/0 DOM), word fallback LLM (20/0), reasoning parser
+- 406 capturas reales etiquetadas y validadas por el usuario:
+  `captures/battery/raw/manifest.jsonl` (perceptual 140, numeric 149,
+  spatial 90, word 23, reasoning 4)
+
+**En vuelo (sin terminar):**
+1. `web/src/main.ts` rewired a `solveFromTokens` (tokens del OCR) — compila,
+   NO validado en navegador todavía
+2. `web/src/llm.ts`: cliente VLM (OpenRouter-compatible, base/model/key en
+   localStorage) — sin probar contra Gemma local
+3. Batería headless OCR: resultados INVÁLIDOS (predatos del layout fijo) —
+   borrar `web/battery-node-results.jsonl` y re-correr tras validar Fase 1
+
+**Checklist de retoma (en el portátil con Gemma local):**
+1. `git pull && cd web && npm install && npm run build`
+2. Arrancar Gemma local (Ollama/LM Studio, endpoint OpenAI-compatible)
+3. En la webapp (consola): `saveLlmConfig("http://localhost:11434/v1/chat/completions", "local", "<tag de gemma>")`
+   (importar saveLlmConfig desde ./src/llm.ts o exponer en UI — pendiente)
+4. Validar VLM-first contra el dataset: `node llm-battery.mjs` apuntando a
+   la base local (ajustar BASE en el script)
+5. Si Gemma local acierta ≥90% → hacer VLM el camino primario en main.ts
+   (vlmRead en solverCycle con fallback OCR a solveFromTokens) y correr la
+   batería completa de 406
+6. Perceptiva pendiente: si VLM falla en el conteo de columnas, resolver con
+   geometría (comparar los dos glifos de cada columna con blur-cosine, sin
+   leer la letra — el port de classifyGlyphPair ya existe)
+7. Despliegue VPS: `deploy/` listo (Caddy + HTTPS); la key del VLM en el
+   server si se usa proxy, o Gemma local en el móvil no necesita key
+
+**Decisiones tomadas (no reabrir sin motivo):**
+- VLM-first para percepción (decisión del usuario tras los fallos de OCR);
+  los SOLVERS siguen deterministas (validan lo que el VLM lee)
+- Tesseract se queda como fallback offline
+- API keys: nunca en el repo ni en el cliente versionado; settings del
+  cliente (localStorage) o proxy server con .env
 
 ---
 

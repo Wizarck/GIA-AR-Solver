@@ -1,22 +1,31 @@
 /**
- * MVP-1/2 POC wiring: camera → screen detection → rectified view → solver.
+ * Webapp wiring (Fase 1 — "el OCR es el layout"):
  *
- * Real-time model (roadmap §1.2/§19): the native <video> element renders the
- * preview; detection + rectification + solving run on timers — detection at
- * ~15 Hz, the solver cycle at ~0.8 Hz (fresh hi-res rectification → digit
- * OCR on the option row → NumericSolver → answer stroke mapped back to the
- * camera overlay).
+ * camera → screen detection (EMA quad) → rectification (homography)
+ * → ONE full-screen OCR pass → word tokens {text, bbox, confidence}
+ * → classify module from the question text
+ * → module solver consumes tokens only (no custom box detection)
+ * → AR stroke on the winning token's bbox mapped back to camera space.
+ *
+ * Real-time model: native <video> preview; detector ~15 Hz; solver cycle
+ * ~1 Hz with skip-while-busy. Re-solve only when the token hash changes
+ * (new question) — or via the Re-scan button.
  */
 
 import { ScreenDetector } from "./detector";
 import { computeHomography, rectify, type Matrix3, type Point } from "./homography";
-import { readDigits } from "./ocr";
-import { findOptionBoxes, solveNumeric, type NumericSolution, type Rect } from "./solver";
+import { ocrTokens } from "./ocr";
+import {
+  classifyQuestion,
+  looksLikeStatement,
+  solveFromTokens,
+  type ModuleKind,
+} from "./solver";
 
-const PROCESS_INTERVAL_MS = 66; // ~15 Hz detection cadence
-const SOLVER_INTERVAL_MS = 1200; // solver cycle cadence
-const WORK_WIDTH = 240; // detector working width in pixels
-const RECT_W = 640; // solver-grade rectified width
+const PROCESS_INTERVAL_MS = 66; // ~15 Hz detection
+const SOLVER_INTERVAL_MS = 1000; // solver cadence; cycles skip while busy
+const WORK_WIDTH = 240;
+const RECT_W = 640;
 const RECT_H = 400;
 
 const cameraEl = document.getElementById("camera") as HTMLVideoElement;
@@ -25,15 +34,29 @@ const rectifiedCanvas = document.getElementById("rectified") as HTMLCanvasElemen
 const stateEl = document.getElementById("state") as HTMLDivElement;
 const hudEl = document.getElementById("hud") as HTMLDivElement;
 const msgEl = document.getElementById("msg") as HTMLDivElement;
+const moduleEl = document.getElementById("module") as HTMLSpanElement;
+const confEl = document.getElementById("conf") as HTMLSpanElement;
+const answerEl = document.getElementById("answer") as HTMLSpanElement;
 const startBtn = document.getElementById("start") as HTMLButtonElement;
 const stopBtn = document.getElementById("stop") as HTMLButtonElement;
 const flipBtn = document.getElementById("flip") as HTMLButtonElement;
+const refreshBtn = document.getElementById("refresh") as HTMLButtonElement;
 
-if (!cameraEl || !overlayCanvas || !rectifiedCanvas || !stateEl || !hudEl || !msgEl) {
+if (!cameraEl || !overlayCanvas || !rectifiedCanvas || !stateEl || !hudEl || !msgEl || !moduleEl || !confEl || !answerEl) {
   throw new Error("DOM elements missing");
 }
 rectifiedCanvas.width = RECT_W;
 rectifiedCanvas.height = RECT_H;
+
+interface Rect { x: number; y: number; w: number; h: number }
+
+interface Solution {
+  module: ModuleKind;
+  answerIndex: number | null;
+  box: Rect | null;
+  confidence: number;
+  label: string;
+}
 
 let stream: MediaStream | null = null;
 let running = false;
@@ -41,13 +64,15 @@ let facingMode: "environment" | "user" = "environment";
 let timerId: number | undefined;
 let solverTimerId: number | undefined;
 let frames = 0;
-let detections = 0;
 let lastFpsAt = performance.now();
 let fps = 0;
 let ocrBusy = false;
-let solverStatus = "inactivo";
-let lastOcrTexts: string[] = [];
-let lastSolution: (NumericSolution & { boxes: Array<{ x: number; y: number; w: number; h: number }> }) | null = null;
+let ocrFailed = false;
+let lastSolution: Solution | null = null;
+let moduleKind: ModuleKind = "unknown";
+let lastQuestionLine = "";
+let lastTokensHash = "";
+let lastStatement: { text: string; at: number } | null = null;
 
 const detector = new ScreenDetector();
 const work = document.createElement("canvas");
@@ -60,11 +85,24 @@ function showMessage(text: string, isError = false): void {
   msgEl.className = isError ? "error" : "";
 }
 
+function setSolutionDisplay(): void {
+  moduleEl.textContent =
+    moduleKind === "unknown" ? "—" : moduleKind === "numeric" ? "numérica" : moduleKind === "perceptual" ? "perceptiva" : moduleKind === "word" ? "palabras" : moduleKind === "reasoning" ? "razonamiento" : "espacial";
+  if (lastSolution) {
+    confEl.textContent = `${Math.round(lastSolution.confidence * 100)} %`;
+    answerEl.textContent = lastSolution.label;
+  } else {
+    confEl.textContent = "—";
+    answerEl.textContent = "—";
+  }
+}
+
 function activateUi(): void {
   running = true;
   startBtn.disabled = true;
   stopBtn.disabled = false;
   flipBtn.disabled = false;
+  refreshBtn.disabled = false;
   timerId = window.setInterval(process, PROCESS_INTERVAL_MS);
   solverTimerId = window.setInterval(solverCycle, SOLVER_INTERVAL_MS);
 }
@@ -87,7 +125,7 @@ async function startCamera(): Promise<void> {
   await cameraEl.play();
   activateUi();
   showMessage("");
-  stateEl.textContent = "Buscando pantalla… apunta la cámara a un monitor con contenido claro.";
+  stateEl.textContent = "Buscando pantalla… apunta la cámara al test.";
 }
 
 function stopCamera(): void {
@@ -102,11 +140,16 @@ function stopCamera(): void {
   startBtn.disabled = false;
   stopBtn.disabled = true;
   flipBtn.disabled = true;
+  refreshBtn.disabled = true;
   detector.state.smoothed = null;
   lastSolution = null;
+  moduleKind = "unknown";
+  lastStatement = null;
+  lastTokensHash = "";
   const octx = overlayCanvas.getContext("2d");
   octx?.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
   stateEl.textContent = "Cámara detenida.";
+  setSolutionDisplay();
 }
 
 async function flipCamera(): Promise<void> {
@@ -115,11 +158,20 @@ async function flipCamera(): Promise<void> {
   await startCamera();
 }
 
+/** Re-scan: drop cached state and force a fresh solve on the next cycle. */
+function refreshSolve(): void {
+  lastSolution = null;
+  lastStatement = null;
+  lastQuestionLine = "";
+  lastTokensHash = "";
+  setSolutionDisplay();
+  void solverCycle();
+}
+
 function process(): void {
   if (!running || !cameraEl.videoWidth) return;
   const vw = cameraEl.videoWidth;
   const vh = cameraEl.videoHeight;
-
   const w = WORK_WIDTH;
   const h = Math.round((w * vh) / vw);
   if (work.width !== w || work.height !== h) {
@@ -129,26 +181,21 @@ function process(): void {
   if (!workCtx) return;
   workCtx.drawImage(cameraEl, 0, 0, w, h);
   const frame = workCtx.getImageData(0, 0, w, h);
-
   frames++;
   const detection = detector.detect(frame);
   drawOverlay(detection, vw / w);
-
   if (detection) {
-    detections++;
     stateEl.textContent = `Pantalla detectada — confianza ${(detection.confidence * 100).toFixed(0)} %`;
   } else if (!detector.state.smoothed) {
     stateEl.textContent = "Buscando pantalla…";
   }
-
   const now = performance.now();
   if (now - lastFpsAt >= 1000) {
     fps = (frames * 1000) / (now - lastFpsAt);
     frames = 0;
-    detections = 0;
     lastFpsAt = now;
   }
-  hudEl.textContent = `${fps.toFixed(0)} Hz · det ${detections} · solver: ${solverStatus}`;
+  hudEl.textContent = `${fps.toFixed(0)} Hz · módulo: ${moduleEl.textContent} · conf: ${confEl.textContent}`;
 }
 
 function drawOverlay(detection: ReturnType<ScreenDetector["detect"]>, scale: number): void {
@@ -176,26 +223,30 @@ function drawOverlay(detection: ReturnType<ScreenDetector["detect"]>, scale: num
       ctx.fill();
     }
   }
-  // AR answer stroke: winning option mapped from rectified space to camera
-  if (lastSolution?.solved && lastSolution.answerIndex !== null) {
-    const box = lastSolution.boxes[lastSolution.answerIndex];
+  // AR answer stroke: winning token bbox mapped rectified → camera
+  if (lastSolution?.box) {
     const hMap = currentRectToWork();
     if (hMap) {
+      const b = lastSolution.box;
       const corners = [
-        { x: box.x, y: box.y },
-        { x: box.x + box.w, y: box.y },
-        { x: box.x + box.w, y: box.y + box.h },
-        { x: box.x, y: box.y + box.h },
+        { x: b.x, y: b.y },
+        { x: b.x + b.w, y: b.y },
+        { x: b.x + b.w, y: b.y + b.h },
+        { x: b.x, y: b.y + b.h },
       ].map((p) => {
         const q = applyH(hMap, p.x, p.y);
         return { x: q.x * scale, y: q.y * scale };
       });
       ctx.strokeStyle = "#ff5555";
-      ctx.lineWidth = 6;
+      ctx.lineWidth = 7;
       ctx.beginPath();
       corners.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
       ctx.closePath();
       ctx.stroke();
+      const top = corners.reduce((a, p) => (p.y < a.y ? p : a), corners[0]);
+      ctx.font = "bold 26px system-ui";
+      ctx.fillStyle = "#ff5555";
+      ctx.fillText(`${Math.round(lastSolution.confidence * 100)}%`, top.x - 20, top.y - 12);
     }
   }
 }
@@ -226,8 +277,8 @@ async function solverCycle(): Promise<void> {
   if (!smoothed) return;
   ocrBusy = true;
   try {
-    // hi-res grab from the camera for a solver-grade rectification
-    const gw = 480;
+    // hi-res grab + solver-grade rectification
+    const gw = Math.min(960, cameraEl.videoWidth || 960);
     const gh = Math.round((gw * cameraEl.videoHeight) / cameraEl.videoWidth);
     if (grab.width !== gw || grab.height !== gh) {
       grab.width = gw;
@@ -236,7 +287,6 @@ async function solverCycle(): Promise<void> {
     if (!grabCtx) return;
     grabCtx.drawImage(cameraEl, 0, 0, gw, gh);
     const frame = grabCtx.getImageData(0, 0, gw, gh);
-    // corners live in detector-work coords; rescale them to the grab frame
     const kx = gw / detector.state.width;
     const ky = gh / detector.state.height;
     const cornersGrab = smoothed.map((p) => ({ x: p.x * kx, y: p.y * ky })) as [Point, Point, Point, Point];
@@ -250,74 +300,78 @@ async function solverCycle(): Promise<void> {
       cornersGrab,
     );
     if (!hInv) return;
-    // render rectified and keep its pixels for option detection
     const rctx = rectifiedCanvas.getContext("2d");
     if (!rctx) return;
     const img = rctx.createImageData(RECT_W, RECT_H);
     img.data.set(rectify(frame, hInv, RECT_W, RECT_H).data);
     rctx.putImageData(img, 0, 0);
-    const rectifiedData = rctx.getImageData(0, 0, RECT_W, RECT_H);
+    const rectData = rctx.getImageData(0, 0, RECT_W, RECT_H);
 
-    // detect option boxes in the rectified bottom band (no fixed columns)
-    const boxes: Rect[] = findOptionBoxes(rectifiedData, 0.6, 3);
-    if (boxes.length !== 3) {
-      lastSolution = null;
-      solverStatus = boxes.length ? `${boxes.length} opciones detectadas (esperaba 3)` : "sin opciones en la banda inferior";
+    if (ocrFailed) {
+      stateEl.textContent = "Solver en error — auto-reintento o pulsa ↻ Re-scan.";
       return;
     }
 
-    const values: number[] = [];
-    const texts: string[] = [];
-    // try several insets — Tesseract is sensitive to border noise
-    const insets = [5, 0, 10, 14];
-    for (const box of boxes) {
-      let value: number | null = null;
-      let text = "";
-      for (const inset of insets) {
-        const r = await readDigits(
-          rectifiedCanvas,
-          box.x + inset,
-          box.y + inset,
-          Math.max(10, box.w - 2 * inset),
-          Math.max(10, box.h - 2 * inset),
-        );
-        if (r.value !== null) {
-          value = r.value;
-          text = r.text;
-          break;
-        }
-        text = r.text;
-      }
-      values.push(value ?? NaN);
-      texts.push(text);
-    }
-    lastOcrTexts = texts;
-    if (values.some((v) => Number.isNaN(v))) {
+    // ONE full-screen OCR pass → layout tokens → shared solve
+    let tokens = await ocrTokens(rectifiedCanvas);
+    tokens = tokens.filter((t) => t.conf >= 25 && t.text.trim());
+    if (!tokens.length) return;
+
+    // new-question detection by token-text hash
+    const hash = tokens.map((t) => t.text).join("|");
+    if (hash !== lastTokensHash) {
+      lastTokensHash = hash;
       lastSolution = null;
-      solverStatus = "sin lectura OCR";
+      lastStatement = null;
+      setSolutionDisplay();
+    }
+    const fullText = tokens.map((t) => t.text).join(" ");
+    moduleKind = classifyQuestion(fullText);
+    if (moduleKind === "unknown") {
+      stateEl.textContent = "Módulo no reconocido todavía…";
       return;
     }
-    const solution = solveNumeric({ values, boxes });
-    lastSolution = { ...solution, boxes };
-    if (solution.solved) {
-      solverStatus = `resuelto: ${values[solution.answerIndex ?? 0]} (mediana ${solution.median})`;
-      drawAnswerStroke();
+    // statement capture for reasoning (persists across the UI transition)
+    if (looksLikeStatement(fullText) && !fullText.includes("?")) {
+      lastStatement = { text: fullText, at: Date.now() };
+    }
+
+    const sol = solveFromTokens(tokens, lastStatement?.text ?? null, rectData);
+    if (sol.solved && sol.answerIndex !== null) {
+      lastSolution = {
+        module: sol.module,
+        answerIndex: sol.answerIndex,
+        box: sol.box,
+        confidence: sol.confidence,
+        label: sol.label ?? "",
+      };
     } else {
-      solverStatus = `sin respuesta: ${solution.reason}`;
+      lastSolution = null;
+      stateEl.textContent = `Sin solución: ${sol.reason}`;
+      return;
     }
+    setSolutionDisplay();
+    drawAnswerStroke();
+  } catch (err) {
+    ocrFailed = true;
+    stateEl.textContent = `Error del solver: ${(err as Error).message} — auto-reintento en 5 s.`;
+    // watchdog: auto-recover instead of staying stuck
+    window.setTimeout(() => {
+      ocrFailed = false;
+    }, 5000);
   } finally {
     ocrBusy = false;
   }
 }
 
 function drawAnswerStroke(): void {
-  if (!lastSolution?.solved || lastSolution.answerIndex === null) return;
-  const box = lastSolution.boxes[lastSolution.answerIndex];
+  if (!lastSolution?.box) return;
+  const b = lastSolution.box;
   const rctx = rectifiedCanvas.getContext("2d");
   if (!rctx) return;
   rctx.strokeStyle = "#ff5555";
   rctx.lineWidth = 5;
-  rctx.strokeRect(box.x, box.y, box.w, box.h);
+  rctx.strokeRect(b.x, b.y, b.w, b.h);
 }
 
 // homography self-test: unit square maps onto itself
@@ -332,8 +386,23 @@ function drawAnswerStroke(): void {
 startBtn.addEventListener("click", () => void startCamera());
 stopBtn.addEventListener("click", stopCamera);
 flipBtn.addEventListener("click", () => void flipCamera());
+refreshBtn.addEventListener("click", refreshSolve);
 
-/** Test seam: inject a synthetic MediaStream instead of a physical camera. */
+// ---------------------------------------------------------------------------
+// Test seams: synthetic camera painters (per module) + real-image feed +
+// debug/OCR probes. Only used by the automated battery.
+// ---------------------------------------------------------------------------
+
+interface MockState { n: number; kind: string; payload: Record<string, unknown>; useImage: boolean }
+
+const mockCanvas = document.createElement("canvas");
+mockCanvas.width = 1280;
+mockCanvas.height = 800;
+
+let mockImgReady = false;
+const mockImg = new Image();
+mockImg.onload = () => { mockImgReady = true; };
+
 async function injectStream(s: MediaStream): Promise<void> {
   stream = s;
   cameraEl.srcObject = s;
@@ -341,17 +410,116 @@ async function injectStream(s: MediaStream): Promise<void> {
   activateUi();
   stateEl.textContent = "Stream sintético inyectado (modo test).";
 }
-(window as unknown as { __giaInjectStream?: (s: MediaStream) => Promise<void> }).__giaInjectStream =
-  injectStream;
-(window as unknown as { __giaOcr?: typeof readDigits }).__giaOcr = readDigits;
-(window as unknown as { __giaCropCanvas?: () => HTMLCanvasElement }).__giaCropCanvas = () => rectifiedCanvas;
+
+(window as unknown as { __giaInjectStream?: (s: MediaStream) => Promise<void> }).__giaInjectStream = injectStream;
+
+const mockState: MockState = { n: 0, kind: "numeric", payload: { values: [17, 9, 12] }, useImage: false };
+
+function paintMockScreen(ctx: CanvasRenderingContext2D): void {
+  ctx.fillStyle = "#14161a";
+  ctx.fillRect(0, 0, 1280, 800);
+  ctx.fillStyle = "#f2f4f8";
+  ctx.beginPath();
+  ctx.moveTo(100, 60); ctx.lineTo(1180, 44); ctx.lineTo(1196, 760); ctx.lineTo(84, 744);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = "#20242c";
+  ctx.textAlign = "center";
+  ctx.save();
+  ctx.scale(2, 2); // painters use the original 640x400 coordinate space
+  const p = mockState.payload;
+  if (mockState.useImage) {
+    ctx.restore();
+    if (mockImgReady) {
+      const q = [{ x: 100, y: 60 }, { x: 1180, y: 44 }, { x: 1196, y: 760 }, { x: 84, y: 744 }];
+      const ux = { x: q[1].x - q[0].x, y: q[1].y - q[0].y };
+      const uy = { x: q[3].x - q[0].x, y: q[3].y - q[0].y };
+      ctx.save();
+      ctx.setTransform(ux.x / mockImg.width, ux.y / mockImg.width, uy.x / mockImg.height, uy.y / mockImg.height, q[0].x, q[0].y);
+      ctx.drawImage(mockImg, 0, 0);
+      ctx.restore();
+    }
+  } else if (mockState.kind === "numeric") {
+    ctx.font = "bold 22px sans-serif";
+    ctx.fillText("Qué número está más alejado de la mediana?", 320, 80);
+    const values = (p.values as number[]) ?? [17, 9, 12];
+    const y = 288, h = 96, w = 130, xs = [115, 255, 395];
+    ctx.font = "bold 44px sans-serif";
+    values.forEach((v, i) => {
+      ctx.strokeStyle = "#3a3f4a"; ctx.lineWidth = 3;
+      ctx.strokeRect(xs[i], y, w, h);
+      ctx.fillText(String(v), xs[i] + w / 2, y + h / 2 + 16);
+    });
+    ctx.restore();
+  } else if (mockState.kind === "perceptual") {
+    ctx.font = "bold 22px sans-serif";
+    ctx.fillText("Cuántas columnas tienen la misma letra?", 320, 80);
+    const cols = (p.columns as string[][]) ?? [["j", "J"], ["r", "P"], ["l", "L"], ["g", "J"]];
+    ctx.font = "bold 56px sans-serif";
+    cols.forEach(([t, b], i) => {
+      const x = 190 + i * 90;
+      ctx.fillText(t, x, 180);
+      ctx.fillText(b, x, 250);
+    });
+    ctx.font = "bold 30px sans-serif";
+    [0, 1, 2, 3, 4].forEach((v, i) => {
+      const y = 300, w = 80, xs = 150 + i * 85;
+      ctx.strokeStyle = "#3a3f4a"; ctx.lineWidth = 3;
+      ctx.strokeRect(xs, y, w, 64);
+      ctx.fillText(String(v), xs + w / 2, y + 44);
+    });
+    ctx.restore();
+  } else if (mockState.kind === "word") {
+    ctx.font = "bold 22px sans-serif";
+    ctx.fillText("Qué palabra no es adecuada?", 320, 80);
+    const words = (p.words as string[]) ?? ["Tallar", "Intruso", "Indiscreto"];
+    const y = 288, h = 96, w = 170, xs = [95, 245, 395];
+    ctx.font = "bold 24px sans-serif";
+    words.forEach((w0, i) => {
+      ctx.strokeStyle = "#3a3f4a"; ctx.lineWidth = 3;
+      ctx.strokeRect(xs[i], y, w, h);
+      ctx.fillText(w0, xs[i] + w / 2, y + h / 2 + 10);
+    });
+    ctx.restore();
+  } else {
+    ctx.restore();
+  }
+  ctx.textAlign = "start";
+  ctx.fillStyle = `rgba(255,255,255,${(mockState.n % 2) * 0.02})`;
+  ctx.fillRect(1279, 799, 1, 1);
+}
+
+(window as unknown as { __giaMockStart?: () => Promise<void> }).__giaMockStart = async () => {
+  const ctx = mockCanvas.getContext("2d");
+  if (!ctx) return;
+  paintMockScreen(ctx);
+  const s = mockCanvas.captureStream(30);
+  (window as unknown as { __mockTimer?: number }).__mockTimer = window.setInterval(() => {
+    mockState.n++;
+    paintMockScreen(ctx);
+  }, 60);
+  await injectStream(s);
+};
+
+(window as unknown as { __giaMockScreen?: (kind: string, payload: Record<string, unknown>) => void }).__giaMockScreen = (kind, payload) => {
+  mockState.kind = kind;
+  mockState.payload = payload;
+  mockState.useImage = false;
+  const ctx = mockCanvas.getContext("2d");
+  if (ctx) paintMockScreen(ctx);
+};
+
+(window as unknown as { __giaMockImage?: (dataUrl: string) => void }).__giaMockImage = (dataUrl) => {
+  mockState.useImage = true;
+  mockImgReady = false;
+  mockImg.src = dataUrl;
+};
+
 (window as unknown as { __giaDebug?: () => unknown }).__giaDebug = () => ({
   running,
   videoWidth: cameraEl.videoWidth,
-  videoHeight: cameraEl.videoHeight,
-  readyState: cameraEl.readyState,
   trackCount: stream?.getTracks().length ?? 0,
-  solverStatus,
-  lastOcrTexts,
-  lastSolution,
+  module: moduleKind,
+  questionLine: lastQuestionLine,
+  statement: lastStatement,
+  solution: lastSolution,
 });

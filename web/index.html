@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>GIA AR Solver — POC cámara</title>
+    <title>GIA AR Solver</title>
     <style>
       :root {
         --bg: #0d1117;
@@ -12,6 +12,7 @@
         --muted: #8b949e;
         --accent: #2f81f7;
         --ok: #3fb950;
+        --danger: #ff5555;
       }
       * { box-sizing: border-box; }
       body {
@@ -22,19 +23,19 @@
         min-height: 100vh;
       }
       header {
-        padding: 12px 16px;
+        padding: 10px 14px;
         display: flex;
         align-items: baseline;
-        gap: 12px;
+        gap: 10px;
         border-bottom: 1px solid #21262d;
       }
       header h1 { font-size: 16px; margin: 0; }
-      header span { color: var(--muted); font-size: 12px; }
+      header span { color: var(--muted); font-size: 11px; }
       main {
         display: grid;
-        gap: 12px;
-        padding: 12px 16px;
-        max-width: 1100px;
+        gap: 10px;
+        padding: 10px 14px 20px;
+        max-width: 900px;
         margin: 0 auto;
       }
       .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
@@ -43,85 +44,75 @@
         color: white;
         border: 0;
         border-radius: 8px;
-        padding: 10px 16px;
-        font-size: 14px;
+        padding: 12px 16px;
+        font-size: 15px;
         font-weight: 600;
         cursor: pointer;
       }
       button.secondary { background: #21262d; color: var(--ink); }
+      button.warn { background: #6e40c9; }
       button:disabled { opacity: 0.5; cursor: default; }
-      #hud {
-        font-size: 12px;
-        color: var(--muted);
-        font-variant-numeric: tabular-nums;
-      }
-      .stage {
-        position: relative;
-        width: 100%;
-        border-radius: 12px;
-        overflow: hidden;
-        background: var(--panel);
-      }
-      #camera {
-        display: block;
-        width: 100%;
-        height: auto;
-        background: #000;
-      }
-      #overlay {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-      }
-      .row { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
-      @media (max-width: 720px) { .row { grid-template-columns: 1fr; } }
-      .panel {
-        background: var(--panel);
-        border-radius: 12px;
-        padding: 10px;
-      }
-      .panel h2 { font-size: 12px; margin: 0 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
-      #rectified { display: block; width: 100%; height: auto; border-radius: 6px; background: #000; }
+      #hud { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; width: 100%; }
       #msg {
         font-size: 13px;
-        color: var(--ink);
-        background: var(--panel);
         border-radius: 8px;
         padding: 10px 12px;
         display: none;
       }
-      #msg.error { display: block; color: #f85149; }
-      footer {
-        padding: 12px 16px;
-        color: var(--muted);
-        font-size: 11px;
+      #msg.error { display: block; color: #f85149; background: var(--panel); }
+      .readout {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+      .cell {
+        background: var(--panel);
+        border-radius: 10px;
+        padding: 8px 10px;
         text-align: center;
       }
+      .cell .k { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+      .cell .v { font-size: 18px; font-weight: 700; }
+      .cell .v.dim { color: var(--muted); }
+      .stage { position: relative; width: 100%; border-radius: 12px; overflow: hidden; background: var(--panel); }
+      #camera { display: block; width: 100%; height: auto; background: #000; }
+      #overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+      .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      @media (max-width: 640px) { .row { grid-template-columns: 1fr; } }
+      .panel { background: var(--panel); border-radius: 12px; padding: 10px; }
+      .panel h2 { font-size: 11px; margin: 0 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+      #rectified { display: block; width: 100%; height: auto; border-radius: 6px; background: #000; }
+      #state { font-size: 13px; }
+      footer { padding: 10px 14px 24px; color: var(--muted); font-size: 11px; text-align: center; }
     </style>
   </head>
   <body>
     <header>
       <h1>GIA AR Solver</h1>
-      <span>POC cámara → detección de pantalla → rectificación (MVP-1)</span>
+      <span>cámara → detección → solución → AR</span>
     </header>
     <main>
       <div class="controls">
         <button id="start">Iniciar cámara</button>
         <button id="stop" class="secondary" disabled>Detener</button>
         <button id="flip" class="secondary" disabled>Cambiar cámara</button>
-        <span id="hud">—</span>
+        <button id="refresh" class="warn" disabled title="Vuelve a identificar y resolver">↻ Re-scan</button>
       </div>
+      <div id="hud">—</div>
       <div id="msg"></div>
+      <div class="readout">
+        <div class="cell"><div class="k">Módulo</div><div class="v dim" id="module">—</div></div>
+        <div class="cell"><div class="k">Confianza</div><div class="v" id="conf">—</div></div>
+        <div class="cell"><div class="k">Respuesta</div><div class="v" id="answer" style="color: var(--danger)">—</div></div>
+      </div>
       <div class="stage">
         <video id="camera" playsinline muted></video>
         <canvas id="overlay"></canvas>
       </div>
       <div class="row">
         <div class="panel">
-          <h2>Pantalla rectificada (espacio del solver)</h2>
-          <canvas id="rectified" width="320" height="200"></canvas>
+          <h2>Pantalla rectificada (lo que ve el solver)</h2>
+          <canvas id="rectified" width="640" height="400"></canvas>
         </div>
         <div class="panel">
           <h2>Estado</h2>
@@ -130,7 +121,8 @@
       </div>
     </main>
     <footer>
-      Procesamiento 100 % local: ningún fotograma sale del dispositivo.
+      Procesamiento 100 % local en el navegador: ningún fotograma sale del dispositivo.
+      Apunta la cámara al test; la identificación es automática. Si se traba, pulsa ↻ Re-scan.
     </footer>
     <script type="module" src="/src/main.ts"></script>
   </body>
